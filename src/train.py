@@ -1,12 +1,11 @@
+import argparse
 import json
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-
-from attention_mechanism import SarcasmDetectionModel
-from dataload import create_dataloader
+from attention import SarcasmDetectionModel
+from dataload_train import create_dataloader
 
 
 class EarlyStopping:
@@ -38,7 +37,8 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, p
         total_train_loss = 0
         for texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks in train_loader:
             optimizer.zero_grad()
-            outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks, emotion_masks)
+            outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks,
+                            emotion_masks)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -48,7 +48,8 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, p
         model.eval()
         with torch.no_grad():
             for texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks in val_loader:
-                outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks, emotion_masks)
+                outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks,
+                                emotion_masks)
                 loss = criterion(outputs, labels)
                 total_val_loss += loss.item()
 
@@ -65,7 +66,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, p
         early_stopping(avg_val_loss)
 
         if early_stopping.best_loss == avg_val_loss:
-            # save the model only when a new best is found
             torch.save(model.state_dict(), model_path)
             print("Saved new best model")
 
@@ -84,7 +84,8 @@ def test_model(model, test_loader, model_path):
 
     with torch.no_grad():
         for texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks in test_loader:
-            outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks, emotion_masks)
+            outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks,
+                            emotion_masks)
             _, predicted = torch.max(outputs, 1)
             y_true.extend(labels.tolist())
             y_pred.extend(predicted.tolist())
@@ -101,27 +102,35 @@ def test_model(model, test_loader, model_path):
 
 
 def main():
-    # Model and Hyperparameters
-    text_file = 'normalized_text_embeddings.h5'
-    audio_file = 'normalized_transformed_audio_features_lld.h5'
-    sentiment_file = 'normalized_sentiment_embeddings.h5'
-    emotion_file = 'normalized_emotion_embeddings.h5'
-    label_file = 'label.h5'
+    # Argument parser for command-line arguments
+    parser = argparse.ArgumentParser(description="Train Sarcasm Recognition Model")
+    parser.add_argument('--data', type=str, required=True, help="Path to the dataset directory")
+    parser.add_argument('--epochs', type=int, default=20, help="Number of epochs for training")
+    parser.add_argument('--batch_size', type=int, default=10, help="Batch size for training")
+    parser.add_argument('--model_path', type=str, default='sarcasm_detection_model.pth', help="Path to save the trained model")
+    parser.add_argument('--patience', type=int, default=5, help="Patience for early stopping")
+    parser.add_argument('--lr', type=float, default=0.0001, help="Learning rate for training")  # Added learning rate
+    args = parser.parse_args()
 
-    train_loader, val_loader, test_loader = create_dataloader(text_file, audio_file, sentiment_file,
-                                                                    emotion_file, label_file, batch_size=10)
-    model_path = '/path to save the model'
-    epochs = 10  # set epochs yourself
-    patience = 5  # set patience yourself
+    # Load data
+    text_file = f'{args.data}/embeddings/normalized_text_embeddings.h5'
+    audio_file = f'{args.data}/embeddings/normalized_transformed_audio_features_lld.h5'
+    sentiment_file = f'{args.data}/embeddings/normalized_sentiment_embeddings.h5'
+    emotion_file = f'{args.data}/embeddings/normalized_emotion_embeddings.h5'
+    label_file = f'{args.data}/label.h5'
+
+    train_loader, val_loader, test_loader = create_dataloader(text_file, audio_file, sentiment_file, emotion_file, label_file, batch_size=args.batch_size)
 
     # Model initialization
     model = SarcasmDetectionModel()
-    criterion = nn.CrossEntropyLoss()  # handle softmax internally
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)  # set lr and batch_size yourself
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)  # Use learning rate from args
 
-    # Training and Evaluation
-    train_model(model, train_loader, val_loader, criterion, optimizer, epochs, patience, model_path)
-    test_model(model, test_loader, model_path)
+    # Train the model
+    train_model(model, train_loader, val_loader, criterion, optimizer, args.epochs, args.patience, args.model_path)
+
+    # Test the model
+    test_model(model, test_loader, args.model_path)
 
 if __name__ == '__main__':
     main()

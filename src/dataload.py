@@ -1,102 +1,123 @@
-import h5py
+import torchaudio
+import whisper
+import os
+import subprocess
+import pandas as pd
 import torch
-from sklearn.model_selection import train_test_split
-from torch.utils.data import Dataset, DataLoader, random_split
-from torch.nn.utils.rnn import pad_sequence
+from sklearn.preprocessing import StandardScaler
+from transformers import BertTokenizer, BertModel, AutoModelForAudioClassification, Wav2Vec2FeatureExtractor, AutoConfig, AutoTokenizer, AutoModel
 
 
-class SarcasmDataset(Dataset):
-    def __init__(self, data, audio_names):
-        super().__init__()
-        self.data = data
-        self.audio_names = audio_names
-
-    def __len__(self):
-        return len(self.audio_names)
-
-    def __getitem__(self, idx):
-        audio_name = self.audio_names[idx]
-        return ((self.data['texts'][audio_name],
-                self.data['audios'][audio_name],
-                self.data['sentiments'][audio_name],
-                self.data['emotions'][audio_name],
-                self.data['labels'][audio_name].squeeze()),
-                audio_name)
+def transcribe_audio_whisper(audio_file_path):
+    whisper_model = whisper.load_model("small")
+    result = whisper_model.transcribe(audio_file_path)
+    print('transcribed text:', result['text'])
+    return result['text']
 
 
-def load_data(text_file, audio_file, sentiment_file, emotion_file, label_file):
-    # Open the files
-    data={}
-    with h5py.File(text_file, 'r') as text_data, \
-            h5py.File(audio_file, 'r') as audio_data, \
-            h5py.File(sentiment_file, 'r') as sentiment_data, \
-            h5py.File(emotion_file, 'r') as emotion_data, \
-            h5py.File(label_file, 'r') as label_data:
-        # Assume 'label' contains the keys for indexing all other datasets
-        audio_names = list(label_data['label'].keys())
+def extract_audio_features(opensmile_path, config_path, audio_file_path, LLD_path):
+    command = [
+        os.path.join(opensmile_path, "bin", "SMILExtract"),
+        "-C", config_path,
+        "-I", audio_file_path,
+        "-lldcsvoutput", LLD_path,
+        "-timestampcsvlld", "0",
+        "-headercsvlld", "0"
+    ]
+    print("Running command:", " ".join(command))
 
-        data['texts'] = {name: torch.tensor(text_data['text'][name][:], dtype=torch.float) for name in audio_names}
-        data['audios'] = {name: torch.tensor(audio_data['audio'][name][:], dtype=torch.float) for name in
-                          audio_names}
-        data['sentiments'] = {name: torch.tensor(sentiment_data['sentiment'][name][:], dtype=torch.float) for name in
-                              audio_names}
-        data['emotions'] = {name: torch.tensor(emotion_data['emotion'][name][:], dtype=torch.float) for name in
-                            audio_names}
-        data['labels'] = {name: torch.tensor(label_data['label'][name][:], dtype=torch.long) for name in audio_names}
-    return data, audio_names
+    try:
+        result = subprocess.run(["echo", "Hello, World!"], check=True, capture_output=True, text=True)
+        print("Diagnostic ls Output:", result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running diagnostic ls command: {e.stderr}")
 
+    try:
+        # Run the command and capture output
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        print("SMILExtract Output:", result.stdout)
+        print("SMILExtract Errors:", result.stderr)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running SMILExtract: {e.stderr}")
+        raise
 
-def collate_fn(batch):
-    #texts, audios, sentiments, emotions, labels = zip(*batch)
-    data, audio_names = zip(*batch)
-    texts, audios, sentiments, emotions, labels = zip(*data)
-    # Pad sequences and create masks
-    texts, text_masks = pad_and_create_mask(texts)
+        # Ensure the output file exists before reading
+    if not os.path.exists(LLD_path):
+        raise FileNotFoundError(f"Output file not found: {LLD_path}")
 
-    audios, audio_masks = pad_and_create_mask(audios)
-    sentiments, sentiment_masks = pad_and_create_mask(sentiments)
-    emotions, emotion_masks = pad_and_create_mask(emotions)
-    # Assuming labels are already appropriately shaped
-    labels = torch.stack(labels)
-
-    return texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks, audio_names
+    df = pd.read_csv(LLD_path, header=None, delimiter=';')
+    df = df.iloc[:, 1:]  # Remove the first column
+    return df.to_numpy()
 
 
-def pad_and_create_mask(sequences, padding_value=0):
-    # Pad sequences
-    padded_sequences = pad_sequence(sequences, batch_first=True, padding_value=padding_value)
-    masks = (padded_sequences != padding_value).any(dim=2)  # keep only (batch, max_seq_length)
-    #masks = padded_sequences != padding_value
-    return padded_sequences, masks
+def get_bert_sequential_embeddings(text):
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    model = BertModel.from_pretrained('bert-base-uncased')
+    model.eval()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    encoded_input = tokenizer(text, return_tensors='pt',
+                              truncation=True,
+                              return_attention_mask=True,
+                              max_length=512,
+                              padding=True,
+                              add_special_tokens=True)
+    input_ids = encoded_input['input_ids'].to(device)
+    attention_mask = encoded_input['attention_mask'].to(device)
+    with torch.no_grad():
+        output = model(input_ids, attention_mask=attention_mask)
+    embeddings = output.last_hidden_state.squeeze(0)
+    #print('text features:', embeddings)
+    #print(embeddings.shape)
+    return embeddings.cpu().numpy()
 
 
-def create_dataloader(texts, audios, sentiments, emotions, labels, batch_size):
-    data, audio_names = load_data(texts, audios, sentiments, emotions, labels)
-    dataset = SarcasmDataset(data, audio_names)
-    total_size = len(dataset)
-    train_ratio = 0.7
-    valid_ratio = 0.15
-    test_ratio = 0.15
+def get_emotion(audio_file_path):
+    model_name = "ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition"
+    config = AutoConfig.from_pretrained(model_name, output_hidden_states=True)
+    model = AutoModelForAudioClassification.from_pretrained(model_name, config=config)
+    feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained("facebook/wav2vec2-large-xlsr-53")
 
-    train_dataset, temp_dataset = train_test_split(dataset, test_size=1 - train_ratio, random_state=2024)
-    valid_dataset, test_dataset = train_test_split(temp_dataset, test_size=test_ratio / (valid_ratio + test_ratio),
-                                                   random_state=2024)
+    waveform, sample_rate = torchaudio.load(audio_file_path)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
-    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
-    return train_loader, valid_loader, test_loader
+    if waveform.shape[0] > 1:  # Handle multiple channels -- average across channels
+        waveform = torch.mean(waveform, dim=0)
+    else:  # single channel, ensure it's the correct shape [1, N]
+        waveform = waveform.squeeze()
+    inputs = feature_extractor(waveform, return_tensors="pt", sampling_rate=16000, padding=True)
+    with torch.no_grad():  # no need for gradients
+        outputs = model(inputs.input_values.float())
+        embeddings = outputs.hidden_states[-1].squeeze(0) # the output features from the final layer of the model for each time step
+    embeddings = embeddings
+    return embeddings.cpu().numpy()
 
-def main():
-    # Model and Hyperparameters
-    text_file = '/data/input_features/normalized_text_embeddings.h5'
-    audio_file = '/data/input_features/normalized_transformed_audio_features_lld.h5'
-    sentiment_file = '/data/input_features/normalized_sentiment_embeddings.h5'
-    emotion_file = '/data/input_features/normalized_emotion_embeddings.h5'
-    label_file = '/data/input_features/label.h5'
 
-    train_loader, val_loader, test_loader = create_dataloader(text_file, audio_file, sentiment_file,
-                                                              emotion_file, label_file, 32)
+def get_sentiment(text):
+    tokenizer = AutoTokenizer.from_pretrained("siebert/sentiment-roberta-large-english")
+    model = AutoModel.from_pretrained("siebert/sentiment-roberta-large-english")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
 
-if __name__ == '__main__':
-    main()
+    encoded_input = tokenizer(text, return_tensors='pt',
+                              truncation=True,
+                              return_attention_mask=True,
+                              max_length=512,
+                              padding=True,
+                              add_special_tokens=True)
+
+    input_ids = encoded_input['input_ids'].to(device)
+    attention_mask = encoded_input['attention_mask'].to(device)
+
+    with torch.no_grad():  # Ensures no gradients are calculated to save memory and computations
+        outputs = model(input_ids, attention_mask=attention_mask)
+    embeddings = outputs.last_hidden_state.squeeze(0)
+    embeddings = embeddings
+    return embeddings.cpu().numpy()
+
+def normalize_embeddings(embeddings):
+    scaler = StandardScaler()
+    normalized_embeddings = scaler.fit_transform(embeddings)
+    return normalized_embeddings
+
+
+
