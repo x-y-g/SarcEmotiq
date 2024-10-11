@@ -47,7 +47,7 @@ def extract_emotion_embeddings(audio_file):
         outputs = model(inputs.input_values)
     return outputs.hidden_states[-1].cpu().numpy()
 
-# Sentiment Embedding Extraction
+# Sentiment Embedding Extraction (RoBERTa)
 def extract_sentiment_embeddings(text):
     tokenizer = BertTokenizer.from_pretrained("siebert/sentiment-roberta-large-english")
     model = BertModel.from_pretrained("siebert/sentiment-roberta-large-english").to(device)
@@ -62,7 +62,10 @@ def normalize_embeddings(embeddings):
     return scaler.fit_transform(embeddings)
 
 # Main function to process directory and save embeddings
-def process_directory(audio_directory, text_csv, opensmile_path, config_file):
+def process_directory(audio_directory, text_csv, opensmile_path, output_directory):
+    # Correctly define the OpenSMILE config file path
+    config_file = f"{opensmile_path}/config/compare16/ComParE_2016.conf"
+
     df = pd.read_csv(text_csv)
 
     # Create separate HDF5 files for text, audio, sentiment, and emotion
@@ -76,11 +79,14 @@ def process_directory(audio_directory, text_csv, opensmile_path, config_file):
     sentiment_group = sentiment_hdf5.create_group('sentiment')
     emotion_group = emotion_hdf5.create_group('emotion')
 
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
     for _, row in df.iterrows():
         audio_name = row['KEY']
         text = row['SENTENCE']
         audio_file = os.path.join(audio_directory, f"{audio_name}.wav")
-        LLD_path = os.path.join(audio_directory, f"{audio_name}_LLDs.csv")
+        LLD_path = os.path.join(output_directory, f"{audio_name}_LLDs.csv")
 
         # Extract embeddings
         text_embeddings = normalize_embeddings(extract_text_embeddings(text))
@@ -94,6 +100,10 @@ def process_directory(audio_directory, text_csv, opensmile_path, config_file):
         sentiment_group.create_dataset(audio_name, data=sentiment_embeddings)
         emotion_group.create_dataset(audio_name, data=emotion_embeddings)
 
+        # Remove temporary LLD CSV file
+        os.remove(LLD_path)
+
+    # Close all HDF5 files
     text_hdf5.close()
     audio_hdf5.close()
     sentiment_hdf5.close()
@@ -105,7 +115,7 @@ if __name__ == "__main__":
     parser.add_argument('--audio_directory', type=str, required=True, help="Path to the audio files directory.")
     parser.add_argument('--text_csv', type=str, required=True, help="Path to the text CSV file containing 'KEY' and 'SENTENCE'.")
     parser.add_argument('--opensmile_path', type=str, required=True, help="Path to OpenSMILE directory.")
-    parser.add_argument('--config_file', type=str, required=True, help="Path to the OpenSMILE configuration file.")
+    parser.add_argument('--output_directory', type=str, required=True, help="Directory to store temporary audio features.")
 
     args = parser.parse_args()
 
@@ -114,5 +124,5 @@ if __name__ == "__main__":
         audio_directory=args.audio_directory,
         text_csv=args.text_csv,
         opensmile_path=args.opensmile_path,
-        config_file=args.config_file
+        output_directory=args.output_directory
     )

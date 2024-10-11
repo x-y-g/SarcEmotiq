@@ -1,10 +1,8 @@
 h5py==3.11.0
-liac_arff==2.5.0
-librosa==0.10.1
-numpy==1.26.4
-pandas==2.2.2
-scikit_learn==1.4.2
-scipy==1.13.0
+numpy==1.22.0
+openai_whisper==20231117
+pandas==1.5.3
+scikit_learn==1.5.2
 torch==2.2.2
 torchaudio==2.2.2
 transformers==4.39.3
