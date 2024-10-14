@@ -6,7 +6,12 @@ import torch.optim as optim
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from attention import SarcasmDetectionModel
 from dataload_train import create_dataloader
+from tqdm import tqdm
+import logging
 
+# Initialize logging
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger()
 
 class EarlyStopping:
     def __init__(self, patience, min_delta=0):
@@ -27,7 +32,6 @@ class EarlyStopping:
             self.best_loss = val_loss
             self.counter = 0
 
-
 def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, patience, model_path):
     early_stopping = EarlyStopping(patience=patience)
     epoch_details = []
@@ -35,15 +39,23 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, p
     for epoch in range(epochs):
         model.train()
         total_train_loss = 0
-        for texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks in train_loader:
-            optimizer.zero_grad()
-            outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks,
-                            emotion_masks)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            total_train_loss += loss.item()
 
+        # Progress bar for each epoch
+        with tqdm(total=len(train_loader), desc=f'Epoch {epoch + 1}/{epochs}', unit='batch') as pbar:
+            for texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks in train_loader:
+                optimizer.zero_grad()
+                outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks,
+                                emotion_masks)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                total_train_loss += loss.item()
+
+                # Update progress bar with loss
+                pbar.update(1)
+                pbar.set_postfix({"Train Loss": f"{loss.item():.4f}"})
+
+        # Validation phase
         total_val_loss = 0
         model.eval()
         with torch.no_grad():
@@ -55,7 +67,7 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, p
 
         avg_train_loss = total_train_loss / len(train_loader)
         avg_val_loss = total_val_loss / len(val_loader)
-        print(f'Epoch {epoch + 1}/{epochs} - Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}')
+        logger.info(f'Epoch {epoch + 1}/{epochs} - Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}')
 
         epoch_details.append({
             'epoch': epoch + 1,
@@ -63,43 +75,17 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs, p
             'val_loss': avg_val_loss
         })
 
+        # Early stopping and model saving
         early_stopping(avg_val_loss)
-
         if early_stopping.best_loss == avg_val_loss:
             torch.save(model.state_dict(), model_path)
-            print("Saved new best model")
+            logger.info("Model saved: Best model so far!")
 
         if early_stopping.early_stop:
-            print("Early stopping triggered.")
+            logger.info("Early stopping triggered!")
             break
 
     return epoch_details
-
-
-def test_model(model, test_loader, model_path):
-    model.load_state_dict(torch.load(model_path))
-    model.eval()
-    y_true = []
-    y_pred = []
-
-    with torch.no_grad():
-        for texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks in test_loader:
-            outputs = model(texts, audios, sentiments, emotions, text_masks, audio_masks, sentiment_masks,
-                            emotion_masks)
-            _, predicted = torch.max(outputs, 1)
-            y_true.extend(labels.tolist())
-            y_pred.extend(predicted.tolist())
-
-    acc = accuracy_score(y_true, y_pred)
-    precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted')
-    print(f'Accuracy: {acc:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}')
-    return {
-        'Accuracy': acc,
-        'Precision': precision,
-        'Recall': recall,
-        'F1 Score': f1
-    }
-
 
 def main():
     # Argument parser for command-line arguments
@@ -109,14 +95,14 @@ def main():
     parser.add_argument('--batch_size', type=int, default=10, help="Batch size for training")
     parser.add_argument('--model_path', type=str, default='sarcasm_detection_model.pth', help="Path to save the trained model")
     parser.add_argument('--patience', type=int, default=5, help="Patience for early stopping")
-    parser.add_argument('--lr', type=float, default=0.0001, help="Learning rate for training")  # Added learning rate
+    parser.add_argument('--lr', type=float, default=0.0001, help="Learning rate for training")
     args = parser.parse_args()
 
     # Load data
-    text_file = f'{args.data}/embeddings/normalized_text_embeddings.h5'
-    audio_file = f'{args.data}/embeddings/normalized_transformed_audio_features_lld.h5'
-    sentiment_file = f'{args.data}/embeddings/normalized_sentiment_embeddings.h5'
-    emotion_file = f'{args.data}/embeddings/normalized_emotion_embeddings.h5'
+    text_file = f'{args.data}/normalized_text.h5'
+    audio_file = f'{args.data}/normalized_audio.h5'
+    sentiment_file = f'{args.data}/normalized_sentiment.h5'
+    emotion_file = f'{args.data}/normalized_emotion.h5'
     label_file = f'{args.data}/label.h5'
 
     train_loader, val_loader, test_loader = create_dataloader(text_file, audio_file, sentiment_file, emotion_file, label_file, batch_size=args.batch_size)
@@ -124,13 +110,10 @@ def main():
     # Model initialization
     model = SarcasmDetectionModel()
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)  # Use learning rate from args
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # Train the model
     train_model(model, train_loader, val_loader, criterion, optimizer, args.epochs, args.patience, args.model_path)
-
-    # Test the model
-    test_model(model, test_loader, args.model_path)
 
 if __name__ == '__main__':
     main()

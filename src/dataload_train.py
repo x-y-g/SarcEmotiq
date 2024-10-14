@@ -16,11 +16,11 @@ class SarcasmDataset(Dataset):
 
     def __getitem__(self, idx):
         audio_name = self.audio_names[idx]
-        return ((self.data['texts'][audio_name],
-                self.data['audios'][audio_name],
-                self.data['sentiments'][audio_name],
-                self.data['emotions'][audio_name],
-                self.data['labels'][audio_name].squeeze()),
+        return ((self.data['text'][audio_name],
+                self.data['audio'][audio_name],
+                self.data['sentiment'][audio_name],
+                self.data['emotion'][audio_name],
+                self.data['label'][audio_name].squeeze()),
                 audio_name)
 
 
@@ -35,14 +35,14 @@ def load_data(text_file, audio_file, sentiment_file, emotion_file, label_file):
         # Assume 'label' contains the keys for indexing all other datasets
         audio_names = list(label_data['label'].keys())
 
-        data['texts'] = {name: torch.tensor(text_data['text'][name][:], dtype=torch.float) for name in audio_names}
-        data['audios'] = {name: torch.tensor(audio_data['audio'][name][:], dtype=torch.float) for name in
+        data['text'] = {name: torch.tensor(text_data['text'][name][:], dtype=torch.float) for name in audio_names}
+        data['audio'] = {name: torch.tensor(audio_data['audio'][name][:], dtype=torch.float) for name in
                           audio_names}
-        data['sentiments'] = {name: torch.tensor(sentiment_data['sentiment'][name][:], dtype=torch.float) for name in
+        data['sentiment'] = {name: torch.tensor(sentiment_data['sentiment'][name][:], dtype=torch.float) for name in
                               audio_names}
-        data['emotions'] = {name: torch.tensor(emotion_data['emotion'][name][:], dtype=torch.float) for name in
+        data['emotion'] = {name: torch.tensor(emotion_data['emotion'][name][:], dtype=torch.float) for name in
                             audio_names}
-        data['labels'] = {name: torch.tensor(label_data['label'][name][:], dtype=torch.long) for name in audio_names}
+        data['label'] = {name: torch.tensor(label_data['label'][name][:], dtype=torch.long) for name in audio_names}
     return data, audio_names
 
 
@@ -59,7 +59,7 @@ def collate_fn(batch):
     # Assuming labels are already appropriately shaped
     labels = torch.stack(labels)
 
-    return texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks, audio_names
+    return texts, audios, sentiments, emotions, labels, text_masks, audio_masks, sentiment_masks, emotion_masks
 
 
 def pad_and_create_mask(sequences, padding_value=0):

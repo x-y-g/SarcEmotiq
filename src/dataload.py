@@ -24,7 +24,7 @@ def extract_audio_features(opensmile_path, config_path, audio_file_path, LLD_pat
         "-timestampcsvlld", "0",
         "-headercsvlld", "0"
     ]
-    print("Running command:", " ".join(command))
+    #print("Running command:", " ".join(command))
 
     try:
         result = subprocess.run(["echo", "Hello, World!"], check=True, capture_output=True, text=True)
