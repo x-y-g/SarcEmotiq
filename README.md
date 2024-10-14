@@ -48,9 +48,7 @@ You can retrain the model with your own dataset. Here's how:
    SENTENCE: This column contains the transcriptions (or textual representations) of the audio files. Each row should correspond to the text spoken in the associated audio file.
 
 
-2. 🔄 Normalize the Embeddings
-
-   Once the embeddings (audio, text, sentiment, and emotion) are extracted, you can normalize them using the following command:
+2. Once the embeddings (audio, text, sentiment, and emotion) are extracted, you can normalize them using the following command:
    ```
    python normalize_embeddings.py --embeddings path/to/embeddings.h5 --output_dir path/to/output_directory
    ```
