@@ -1,28 +1,28 @@
 # 🎙️😜 SarcEmotiq
 SarcEmotiq is a deep learning-based tool for recognizing sarcasm in English audio. It uses pre-trained models trained on specific datasets (MUStARD++) but also allows users to retrain the model with their own data.
 
-➡️ More information about the model please visit: https://pubs.aip.org/asa/poma/article/54/1/060002/3305267/Improving-sarcasm-detection-from-speech-and-text
+➡️ More information about the model please visit our publication: https://pubs.aip.org/asa/poma/article/54/1/060002/3305267/Improving-sarcasm-detection-from-speech-and-text
 
 ## 🚀 Installation
 1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/SarcEmotiq.git
+   cd SarcEmotiq
    ```
 2. Set up the environment:
    ```bash
    pip install -r requirements.txt
    ```
-3. You can choose to use the pre-trained model or retrain the model on your dataset. Details are shown below 👇:
-
-## 🎯  Pre-trained model
-Download the pre-trained model from [https://drive.google.com/file/d/1xqyofUELCl2oBlA6151Vvd-f8pIG2biF/view?usp=drive_link]. Place it in the `models/` folder.
-
-### 📂 Inference with Pre-trained Model
-To use the sarcasm recognition model on a new audio file (.wav):
+3. Download the pretrained model (Place it in the `models/` folder)
+   ```bash
+   wget <https://drive.google.com/file/d/1xqyofUELCl2oBlA6151Vvd-f8pIG2biF/view?usp=drive_link> -O models/model.pth
+   ```
+4. Run inference
    ```bash
    python src/inference.py --input path/to/data --model path/to/model
    ```
-⚠️ Note: The audio file should be in .wav format, ranging from 1s to 20s. No need to include the contextual sentence. Check the example under /samples/.
+   ⚠️ Note: The audio file should be in .wav format, ranging from 1s to 20s. No need to include the contextual sentence. Check the example under /samples/.
+
 
 ## 🔄 Retrain the model
 You can retrain the model with your own dataset. Here's how:
