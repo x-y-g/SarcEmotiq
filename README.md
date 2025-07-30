@@ -67,35 +67,54 @@ The input audio and associated text should meet the following criteria:
 
 
 ## Retrain the model
-You can retrain the model with your own dataset. Here's how:
+You can retrain the model with your own dataset (audio + text).
+The preprocessing and training are organized as separate steps to maximize flexibility and control for research purpose.
 
-1. First, you need to generate embeddings compatible with the model from your dataset:
+### Step 1: Prepare the input dataset
+
+You need:
+- A folder of `.wav` audio files
+- A transcript CSV file
+
+**CSV format**:
+```csv
+KEY,SENTENCE
+audio1,This is a test sentence.
+audio2,Another example of sarcasm.
+```
+The text_csv file is expected to contain at least two columns:
+- KEY: This should be a unique identifier for each audio file, corresponding to the file name (without the .wav extension).
+- SENTENCE: This column contains the transcriptions (or textual representations) of the audio files. Each row should correspond to the text spoken in the associated audio file.
+
+**Recommended audio format**
+    Format: .wav
+    Channels: mono
+    Duration: 1–20 seconds
+    Sample rate: 16kHz (others will be resampled)
+    
+Example directory:
+```bash
+/dataset/
+├── audio/
+│   ├── audio1.wav
+│   └── audio2.wav
+└── transcript.csv
+```
+
+### Step 2: Generate feature embeddings 
    ```bash
    python generate_embeddings.py \
     --audio_directory /path/to/audios \ 
     --text_csv /path/to/text.csv \  #Path to the CSV file containing the audio file keys and text, sample: "/data/mustard++_onlyU.csv"
     --output_directory /path/to/store/tmp_audio_features  #Directory where the temporary extracted audio feature files (LLDs) will be stored and removed after processing.
    ```
-   Text CSV format:
 
-   ```
-   KEY,SENTENCE
-   audio1,"This is a test sentence."
-   audio2,"Another example of audio transcription."
-   ```
-   The text_csv file is expected to contain at least two columns:
-
-   KEY: This should be a unique identifier for each audio file, corresponding to the file name (without the .wav extension).
-
-   SENTENCE: This column contains the transcriptions (or textual representations) of the audio files. Each row should correspond to the text spoken in the associated audio file.
-
-
-2. Once the embeddings (audio, text, sentiment, and emotion) are extracted, you can normalize them using the following command:
+### Step 3: Normalize feature embeddings
+Once the embeddings (audio, text, sentiment, and emotion) are extracted, you can normalize them using the following command:
    ```
    python normalize_embeddings.py --embeddings path/to/embeddings.h5 --output_dir path/to/output_directory
    ```
    This will generate four normalized files:
-
     - normalized_audio.h5
     - normalized_text.h5
     - normalized_sentiment.h5
@@ -103,21 +122,21 @@ You can retrain the model with your own dataset. Here's how:
    
    Additionally, a separate label.h5 file will be generated containing the unmodified labels.
 
-
-3. When the normalized embeddings are generated, you can use the following command to train the model.
+### Step 4: Train the model
+When the normalized embeddings are generated, you can use the following command to train the model.
 The default path for normalized embedding files are under data/.
    ```bash
    python train.py --data path/to/data --epochs 20 --batch_size 32 --model_path ./models/model.pth --patience 5 --lr 0.001
    ```
    
-   - data: Path to the folder containing preprocessed embeddings.
-   - epochs: Number of epochs for training (default is 20).
-   - batch_size: Number of samples per batch (default is 32).
-   - model_path: Path to save the trained model. Make sure to provide a full file name like ./models/model.pth.
-   - patience: Number of epochs to wait for improvement before early stopping.
-   - lr: Learning rate for the optimizer (default is 0.001).
+   -- data: Path to the folder containing preprocessed embeddings.
+   -- epochs: Number of epochs for training (default is 20).
+   -- batch_size: Number of samples per batch (default is 32).
+   -- model_path: Path to save the trained model. Make sure to provide a full file name like ./models/model.pth.
+   -- patience: Number of epochs to wait for improvement before early stopping.
+   -- lr: Learning rate for the optimizer (default is 0.001).
 
-   You can adjust epochs, batch_size, and lr to your needs.
+   (You can adjust epochs, batch_size, and lr to your needs.)
 
    The script will output training progress, including the loss on the training and validation sets. The best model will be saved at the specified model path.
 
