@@ -86,11 +86,6 @@ The text_csv file is expected to contain at least two columns:
 - KEY: This should be a unique identifier for each audio file, corresponding to the file name (without the .wav extension).
 - SENTENCE: This column contains the transcriptions (or textual representations) of the audio files. Each row should correspond to the text spoken in the associated audio file.
 
-**Recommended audio format**
-    Format: .wav
-    Channels: mono
-    Duration: 1–20 seconds
-    Sample rate: 16kHz (others will be resampled)
     
 Example directory:
 ```bash
