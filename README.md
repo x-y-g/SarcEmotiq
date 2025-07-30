@@ -124,16 +124,17 @@ The default path for normalized embedding files are under data/.
    python train.py --data path/to/data --epochs 20 --batch_size 32 --model_path ./models/model.pth --patience 5 --lr 0.001
    ```
    You can adjust the following parameters to your needs.
+   ```bash
    - data: Path to the folder containing preprocessed embeddings.
    - epochs: Number of epochs for training (default is 20).
    - batch_size: Number of samples per batch (default is 32).
    - model_path: Path to save the trained model. Make sure to provide a full file name like ./models/model.pth.
    - patience: Number of epochs to wait for improvement before early stopping.
    - lr: Learning rate for the optimizer (default is 0.001).
+   ```
+   - The script will output training progress, including the loss on the training and validation sets. The best model will be saved at the specified model path.
 
-   The script will output training progress, including the loss on the training and validation sets. The best model will be saved at the specified model path.
-
-   The training process includes early stopping based on validation loss. If the model doesn't improve for patience number of epochs, training will stop early.
+   - The training process includes early stopping based on validation loss. If the model doesn't improve for patience number of epochs, training will stop early.
 
 
 ## Limitations
