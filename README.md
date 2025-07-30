@@ -60,7 +60,6 @@ The input audio and associated text should meet the following criteria:
 - **Channels**: Mono preferred (if stereo, the script will average channels)
 - **Sample Rate**: 16 kHz is recommended (resampling is not automatic)
 - **Duration**: 1 to 20 seconds
-- **Bit Depth**: 16-bit PCM is ideal
 - **Environment**: Clean audio (avoid overlapping speech or heavy background noise)
 - **Recommended tool to enhance speech**: [Adobe Podcast](https://podcast.adobe.com/en)
 
