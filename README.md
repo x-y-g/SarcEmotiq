@@ -1,4 +1,6 @@
 # 🎙️😜 SarcEmotiq
+📌 **DOI:** [10.1121/2.0001918](https://doi.org/10.1121/2.0001918)
+
 SarcEmotiq is a deep learning-based tool for recognizing sarcasm in English audio. It uses pre-trained models trained on open-sourced datasets [MUStARD++](https://github.com/cfiltnlp/MUStARD_Plus_Plus) but also allows users to retrain the model with their own data.
 
 ## Model Architecture
@@ -153,12 +155,10 @@ While SarcEmotiq shows commendable performance on benchmark data (74% F1-score) 
 This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** license.
 
 You are free to:
-
 - **Share** — copy and redistribute the material in any medium or format
 - **Adapt** — remix, transform, and build upon the material
 
 Under the following terms:
-
 - **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the authors endorse you or your use.
 - **NonCommercial** — You may not use the material for **commercial purposes**.
 
@@ -166,5 +166,19 @@ Under the following terms:
 
 
 ### Citation: 
-Xiyuan Gao, Shekhar Nayak, Matt Coler; Improving sarcasm detection from speech and text through attention-based fusion exploiting the interplay of emotions and sentiments. Proc. Mtgs. Acoust. 13 May 2024; 54 (1): 060002. https://doi.org/10.1121/2.0001918
+If you use **SarcEmotiq** in your research, publications, or derived work, please cite the following paper:
 
+Xiyuan Gao, Shekhar Nayak, Matt Coler, Improving sarcasm detection from speech and text through attention-based fusion exploiting the interplay of emotions and sentiments. Proc. Mtgs. Acoust. 13 May 2024; 54 (1): 060002. https://doi.org/10.1121/2.0001918
+
+```bibtex
+@article{gao2024sarcasm,
+  title={Improving sarcasm detection from speech and text through attention-based fusion exploiting the interplay of emotions and sentiments},
+  author={Gao, Xiyuan and Nayak, Shekhar and Coler, Matt},
+  journal={Proceedings of Meetings on Acoustics},
+  volume={54},
+  number={1},
+  pages={060002},
+  year={2024},
+  publisher={Acoustical Society of America},
+  doi={10.1121/2.0001918}
+}
