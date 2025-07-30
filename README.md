@@ -1,7 +1,34 @@
 # 🎙️😜 SarcEmotiq
-SarcEmotiq is a deep learning-based tool for recognizing sarcasm in English audio. It uses pre-trained models trained on specific datasets (MUStARD++) but also allows users to retrain the model with their own data.
+SarcEmotiq is a deep learning-based tool for recognizing sarcasm in English audio. It uses pre-trained models trained on open-sourced datasets [MUStARD++]<https://github.com/cfiltnlp/MUStARD_Plus_Plus> but also allows users to retrain the model with their own data.
 
-➡️ More information about the model please visit our publication: https://pubs.aip.org/asa/poma/article/54/1/060002/3305267/Improving-sarcasm-detection-from-speech-and-text
+## Model Architecture
+SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sentiment cues, into a unified attention-based fusion model. Below is a summary of the system.
+
+### 🧬 Modalities Used:
+
+| Modality  | Feature source                                                       |
+|-----------|----------------------------------------------------------------------|
+| Audio     | openSMILE (ComParE_2016)                                             |
+| Text      | BERT-base-uncased                                                    |
+| Emotion   | wav2vec2-large-xlsr → Speech emotion classifier                      |
+| Sentiment | RoBERTa (sentiment-roberta-large-english) Text sentiment classifier  |
+
+### 🔧 Fusion Mechanisms:
+
+1. **Contrastive attention**  
+   Aligns emotions (as query) with sentiments (as key-value) to emphasize conflicting affective states -> indicative of sarcasm.
+
+2. **Cross attention**  
+   Aligns textual content (as query) with audio features (as key-value) to capture prosody-semantic mismatches (e.g., flat tone with exaggerated words).
+
+3. **Masked average pooling**  
+   Reduces all embeddings over time to handle variable-length sequences.
+
+4. **Multimodal concatenation + MLP**  
+   Pooled outputs (text, audio, sentiment, emotion, cross, contrastive) are concatenated and passed through an MLP for final classification.
+
+➡️ More information about the model please visit our [published paper] <https://doi.org/10.1121/2.0001918>
+
 
 ## 🚀 Installation
 1. Clone the repository:
@@ -22,6 +49,23 @@ SarcEmotiq is a deep learning-based tool for recognizing sarcasm in English audi
    python src/inference.py --input path/to/data --model path/to/model
    ```
    ⚠️ Note: The audio file should be in .wav format, ranging from 1s to 20s. No need to include the contextual sentence. Check the example under /samples/.
+
+
+## 🔊 Input Requirements
+
+The input audio and associated text should meet the following criteria:
+
+### Audio
+- **Format**: WAV (.wav)
+- **Channels**: Mono preferred (if stereo, the script will average channels)
+- **Sample Rate**: 16 kHz is recommended (resampling is not automatic)
+- **Duration**: 1 to 20 seconds
+- **Bit Depth**: 16-bit PCM is ideal
+- **Environment**: Clean audio (avoid overlapping speech or heavy background noise)
+- **Recommended tool to enhance speech**: [Adobe Podcast]<https://podcast.adobe.com/en>
+
+### Transcription
+- For **inference**, the system will automatically transcribe audio using [Whisper](https://github.com/openai/whisper).
 
 
 ## 🔄 Retrain the model
@@ -80,6 +124,20 @@ The default path for normalized embedding files are under data/.
    🖇️ The script will output training progress, including the loss on the training and validation sets. The best model will be saved at the specified model path.
 
    🖇️ The training process includes early stopping based on validation loss. If the model doesn't improve for patience number of epochs, training will stop early.
+
+
+## Limitations
+
+While SarcEmotiq shows strong performance on benchmark data, users should be aware of its current limitations:
+
+- **Domain generalization**: Trained primarily on MUStARD++ (scripted, American-accented data). Accuracy may drop for spontaneous speech or unfamiliar accents.
+- **Transcript dependency**: Model performance degrades with inaccurate transcriptions. Whisper is robust but may misinterpret noisy speech.
+- **Emotion/sentiment models**: Emotion and sentiment embeddings come from general-purpose models (not sarcasm-specific), which may add noise in some cases.
+- **Real-time limitations**: This is a batch inference system; not optimized for real-time streaming or large-scale deployment without adaptation.
+- **Context-free inference**: Each audio clip is processed independently. No dialog or speaker context is used.
+
+(Future work may include context-aware transformers for broader deployment.)
+
 
 ## 📜 License
 Licensed under the Apache License, Version 2.0 (the "License");
