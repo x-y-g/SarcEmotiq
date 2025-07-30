@@ -4,7 +4,7 @@ SarcEmotiq is a deep learning-based tool for recognizing sarcasm in English audi
 ## Model Architecture
 SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sentiment cues, into a unified attention-based fusion model. Below is a summary of the system.
 
-### 🧬 Modalities Used:
+### Modalities Used:
 
 | Modality  | Feature source                                                       |
 |-----------|----------------------------------------------------------------------|
@@ -13,7 +13,7 @@ SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sent
 | Emotion   | wav2vec2-large-xlsr → Speech emotion classifier                      |
 | Sentiment | RoBERTa (sentiment-roberta-large-english) Text sentiment classifier  |
 
-### 🔧 Fusion Mechanisms:
+### Fusion Mechanisms:
 
 1. **Contrastive attention**  
    Aligns emotions (as query) with sentiments (as key-value) to emphasize conflicting affective states -> indicative of sarcasm.
@@ -30,7 +30,7 @@ SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sent
 ➡️ More information about the model please visit our [published paper] <https://doi.org/10.1121/2.0001918>
 
 
-## 🚀 Installation
+## Installation
 1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/SarcEmotiq.git
@@ -51,7 +51,7 @@ SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sent
    ⚠️ Note: The audio file should be in .wav format, ranging from 1s to 20s. No need to include the contextual sentence. Check the example under /samples/.
 
 
-## 🔊 Input Requirements
+## Input Requirements
 
 The input audio and associated text should meet the following criteria:
 
@@ -68,7 +68,7 @@ The input audio and associated text should meet the following criteria:
 - For **inference**, the system will automatically transcribe audio using [Whisper](https://github.com/openai/whisper).
 
 
-## 🔄 Retrain the model
+## Retrain the model
 You can retrain the model with your own dataset. Here's how:
 
 1. First, you need to generate embeddings compatible with the model from your dataset:
@@ -78,7 +78,7 @@ You can retrain the model with your own dataset. Here's how:
     --text_csv /path/to/text.csv \  #Path to the CSV file containing the audio file keys and text, sample: "/data/mustard++_onlyU.csv"
     --output_directory /path/to/store/tmp_audio_features  #Directory where the temporary extracted audio feature files (LLDs) will be stored and removed after processing.
    ```
-   📋 Text CSV format:
+   Text CSV format:
 
    ```
    KEY,SENTENCE
@@ -119,16 +119,15 @@ The default path for normalized embedding files are under data/.
    - patience: Number of epochs to wait for improvement before early stopping.
    - lr: Learning rate for the optimizer (default is 0.001).
 
-   🖇️ You can adjust epochs, batch_size, and lr to your needs.
+   You can adjust epochs, batch_size, and lr to your needs.
 
-   🖇️ The script will output training progress, including the loss on the training and validation sets. The best model will be saved at the specified model path.
+   The script will output training progress, including the loss on the training and validation sets. The best model will be saved at the specified model path.
 
-   🖇️ The training process includes early stopping based on validation loss. If the model doesn't improve for patience number of epochs, training will stop early.
+   The training process includes early stopping based on validation loss. If the model doesn't improve for patience number of epochs, training will stop early.
 
 
 ## Limitations
-
-While SarcEmotiq shows strong performance on benchmark data, users should be aware of its current limitations:
+While SarcEmotiq shows commendable performance on benchmark data (74% F1-score) for binary sarcasm detection, users should be aware of its current limitations:
 
 - **Domain generalization**: Trained primarily on MUStARD++ (scripted, American-accented data). Accuracy may drop for spontaneous speech or unfamiliar accents.
 - **Transcript dependency**: Model performance degrades with inaccurate transcriptions. Whisper is robust but may misinterpret noisy speech.
@@ -139,27 +138,22 @@ While SarcEmotiq shows strong performance on benchmark data, users should be awa
 (Future work may include context-aware transformers for broader deployment.)
 
 
-## 📜 License
-Licensed under the Apache License, Version 2.0 (the "License");
-You may not use this file except in compliance with the License.
-You may obtain a copy of the License at:
+## License
+This project is licensed under the **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)** license.
 
-    http://www.apache.org/licenses/LICENSE-2.0
+You are free to:
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+- **Share** — copy and redistribute the material in any medium or format
+- **Adapt** — remix, transform, and build upon the material
 
-However, **commercial use of this software, including any associated patents, is prohibited** without the express written consent of the copyright holder. For non-commercial, academic, and research purposes, the software is free to use, modify, and distribute, provided that all modifications and attributions are clearly noted.
+Under the following terms:
 
-### 🛡️ Patent Reservation:
-The copyright holder explicitly reserves the right to apply for patent protection on any inventions or innovations disclosed in this software. The release of this software under this license does not constitute a waiver of any patent rights, including the right to file for patent protection in the future.
+- **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the authors endorse you or your use.
+- **NonCommercial** — You may not use the material for **commercial purposes**.
 
-### ⚙️ Attribution:
-When using, redistributing, or modifying this software for non-commercial purposes, you must provide appropriate credit, indicating the source as follows:
+📄 Full license text: [https://creativecommons.org/licenses/by-nc/4.0/](https://creativecommons.org/licenses/by-nc/4.0/)
 
-"This software is based on work developed by Gao et al. (2024) and licensed under the Apache 2.0. For more information, visit: https://github.com/x-y-g/SarcEmotiq."
 
-### 📖 Citation: 
+### Citation: 
 Xiyuan Gao, Shekhar Nayak, Matt Coler; Improving sarcasm detection from speech and text through attention-based fusion exploiting the interplay of emotions and sentiments. Proc. Mtgs. Acoust. 13 May 2024; 54 (1): 060002. https://doi.org/10.1121/2.0001918
 
