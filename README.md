@@ -1,5 +1,5 @@
 # 🎙️😜 SarcEmotiq
-SarcEmotiq is a deep learning-based tool for recognizing sarcasm in English audio. It uses pre-trained models trained on open-sourced datasets [MUStARD++]<https://github.com/cfiltnlp/MUStARD_Plus_Plus> but also allows users to retrain the model with their own data.
+SarcEmotiq is a deep learning-based tool for recognizing sarcasm in English audio. It uses pre-trained models trained on open-sourced datasets [MUStARD++](https://github.com/cfiltnlp/MUStARD_Plus_Plus) but also allows users to retrain the model with their own data.
 
 ## Model Architecture
 SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sentiment cues, into a unified attention-based fusion model. Below is a summary of the system.
@@ -14,7 +14,6 @@ SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sent
 | Sentiment | RoBERTa (sentiment-roberta-large-english) Text sentiment classifier  |
 
 ### Fusion Mechanisms:
-
 1. **Contrastive attention**  
    Aligns emotions (as query) with sentiments (as key-value) to emphasize conflicting affective states -> indicative of sarcasm.
 
@@ -27,7 +26,7 @@ SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sent
 4. **Multimodal concatenation + MLP**  
    Pooled outputs (text, audio, sentiment, emotion, cross, contrastive) are concatenated and passed through an MLP for final classification.
 
-➡️ More information about the model please visit our [published paper] <https://doi.org/10.1121/2.0001918>
+➡️ More information about the model please visit our [published paper] (https://doi.org/10.1121/2.0001918)
 
 
 ## Installation
@@ -52,7 +51,6 @@ SarcEmotiq integrates multiple modalities, acoustic + textual + emotional + sent
 
 
 ## Input Requirements
-
 The input audio and associated text should meet the following criteria:
 
 ### Audio
@@ -62,7 +60,7 @@ The input audio and associated text should meet the following criteria:
 - **Duration**: 1 to 20 seconds
 - **Bit Depth**: 16-bit PCM is ideal
 - **Environment**: Clean audio (avoid overlapping speech or heavy background noise)
-- **Recommended tool to enhance speech**: [Adobe Podcast]<https://podcast.adobe.com/en>
+- **Recommended tool to enhance speech**: [Adobe Podcast](https://podcast.adobe.com/en)
 
 ### Transcription
 - For **inference**, the system will automatically transcribe audio using [Whisper](https://github.com/openai/whisper).
